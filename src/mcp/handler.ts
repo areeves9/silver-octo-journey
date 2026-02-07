@@ -11,6 +11,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { jsonRpcError, JsonRpcErrorCode, logger } from "../shared/index.js";
 import { registerAllTools } from "../tools/index.js";
+import { config } from "../config/index.js";
 
 const log = logger.child({ module: "mcp" });
 
@@ -19,18 +20,15 @@ const log = logger.child({ module: "mcp" });
 interface Session {
   server: McpServer;
   transport: StreamableHTTPServerTransport;
-  createdAt: number;
+  lastAccessedAt: number;
 }
 
 const sessions = new Map<string, Session>();
 
-// Clean up stale sessions (older than 30 minutes)
-const SESSION_TTL_MS = 30 * 60 * 1000;
-
 function cleanupStaleSessions(): void {
   const now = Date.now();
   for (const [sessionId, session] of sessions) {
-    if (now - session.createdAt > SESSION_TTL_MS) {
+    if (now - session.lastAccessedAt > config.session.ttlMs) {
       log.debug({ sessionId }, "Cleaning up stale session");
       session.transport.close();
       sessions.delete(sessionId);
@@ -59,7 +57,7 @@ function createSession(sessionId: string): Session {
   const session: Session = {
     server,
     transport,
-    createdAt: Date.now(),
+    lastAccessedAt: Date.now(),
   };
 
   sessions.set(sessionId, session);
@@ -68,16 +66,39 @@ function createSession(sessionId: string): Session {
   return session;
 }
 
-function getOrCreateSession(sessionId: string | undefined): {
-  session: Session;
-  isNew: boolean;
-} {
+type SessionResult =
+  | { ok: true; session: Session; isNew: boolean }
+  | { ok: false; status: number; body: ReturnType<typeof jsonRpcError> };
+
+function getOrCreateSession(sessionId: string | undefined): SessionResult {
+
+  // Existing session — refresh TTL and reuse
   if (sessionId && sessions.has(sessionId)) {
-    return { session: sessions.get(sessionId)!, isNew: false };
+    const session = sessions.get(sessionId)!;
+    session.lastAccessedAt = Date.now();
+    return { ok: true, session, isNew: false };
   }
 
-  const newSessionId = sessionId || randomUUID();
-  return { session: createSession(newSessionId), isNew: true };
+  // Client sent a session ID we don't recognize — don't silently replace it
+  if (sessionId) {
+    return {
+      ok: false,
+      status: 404,
+      body: jsonRpcError(JsonRpcErrorCode.INTERNAL_ERROR, "Session not found or expired"),
+    };
+  }
+
+  // New session — enforce cap
+  if (sessions.size >= config.session.maxSessions) {
+    log.warn({ current: sessions.size, max: config.session.maxSessions }, "Session limit reached");
+    return {
+      ok: false,
+      status: 503,
+      body: jsonRpcError(JsonRpcErrorCode.INTERNAL_ERROR, "Too many active sessions"),
+    };
+  }
+
+  return { ok: true, session: createSession(randomUUID()), isNew: true };
 }
 
 function deleteSession(sessionId: string): boolean {
@@ -120,7 +141,14 @@ export async function handleMcpRequest(
     }
 
     // Get or create session
-    const { session, isNew } = getOrCreateSession(sessionId);
+    const result = getOrCreateSession(sessionId);
+
+    if (!result.ok) {
+      res.status(result.status).json(result.body);
+      return;
+    }
+
+    const { session, isNew } = result;
 
     // Connect server to transport if this is a new session
     if (isNew) {

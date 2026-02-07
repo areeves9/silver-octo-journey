@@ -30,6 +30,10 @@ const envSchema = z.object({
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .default("info"),
 
+  // Sessions
+  MCP_SESSION_TTL_MINUTES: z.coerce.number().default(30),
+  MCP_MAX_SESSIONS: z.coerce.number().default(100),
+
   // Auth0
   AUTH0_DOMAIN: z.string().min(1, "AUTH0_DOMAIN is required"),
   AUTH0_AUDIENCE: z.string().min(1, "AUTH0_AUDIENCE is required"),
@@ -67,6 +71,12 @@ export const config = {
   isDevelopment,
   isProduction,
   isTest,
+
+  // Sessions
+  session: {
+    ttlMs: env.MCP_SESSION_TTL_MINUTES * 60 * 1000,
+    maxSessions: env.MCP_MAX_SESSIONS,
+  },
 
   // Auth0
   auth0: {

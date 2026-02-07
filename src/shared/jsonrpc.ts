@@ -1,8 +1,7 @@
 /**
- * jsonrpc.ts — JSON-RPC 2.0 response utilities.
+ * shared/jsonrpc.ts — JSON-RPC 2.0 response utilities.
  *
  * MCP uses JSON-RPC 2.0, so we standardize error responses here.
- * This eliminates duplicate error object construction across the codebase.
  */
 
 /** Standard JSON-RPC 2.0 error codes used in this server */

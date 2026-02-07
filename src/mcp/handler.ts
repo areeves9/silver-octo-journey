@@ -1,24 +1,20 @@
 /**
- * mcp-handler.ts — Unified MCP request handler.
+ * mcp/handler.ts — Unified MCP request handler.
  *
- * Consolidates the repeated transport creation and request handling logic
- * that was duplicated across POST, GET, and DELETE /mcp endpoints.
+ * Consolidates transport creation and request handling logic
+ * for POST, GET, and DELETE /mcp endpoints.
  */
 
 import type { Request, Response } from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { jsonRpcError, JsonRpcErrorCode } from "./jsonrpc.js";
+import { jsonRpcError, JsonRpcErrorCode } from "../shared/index.js";
 
 /**
  * Handle an MCP protocol request.
  *
  * Creates a StreamableHTTPServerTransport, connects it to the server,
  * and processes the request. Handles cleanup on connection close.
- *
- * @param req - Express request
- * @param res - Express response
- * @param server - MCP server instance
  */
 export async function handleMcpRequest(
   req: Request,
@@ -41,7 +37,9 @@ export async function handleMcpRequest(
     if (!res.headersSent) {
       res
         .status(500)
-        .json(jsonRpcError(JsonRpcErrorCode.INTERNAL_ERROR, "Internal server error"));
+        .json(
+          jsonRpcError(JsonRpcErrorCode.INTERNAL_ERROR, "Internal server error")
+        );
     }
   }
 }

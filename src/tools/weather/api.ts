@@ -1,21 +1,12 @@
 /**
- * tools.ts — Tool registration for the MCP server.
+ * tools/weather/api.ts — Open-Meteo API helpers.
  *
- * Contains types, helpers, and the get_weather tool.
- * Imports the server instance from server.ts and registers tools on it.
- *
- * Python equivalent:
- *   @mcp.tool()
- *   async def get_weather(city: str) -> str: ...
+ * Contains types and functions for geocoding and weather data fetching.
  */
 
-import { z } from "zod";
-import { server } from "./server.js";
+// ─── Types ───────────────────────────────────────────────────────────────────
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-// In Python you'd use Pydantic models. In TS, interfaces + Zod schemas.
-
-interface GeoResult {
+export interface GeoResult {
   name: string;
   latitude: number;
   longitude: number;
@@ -27,7 +18,7 @@ interface GeoResponse {
   results?: GeoResult[];
 }
 
-interface CurrentWeather {
+export interface CurrentWeather {
   temperature_2m: number;
   relative_humidity_2m: number;
   apparent_temperature: number;
@@ -36,7 +27,7 @@ interface CurrentWeather {
   weather_code: number;
 }
 
-interface WeatherResponse {
+export interface WeatherResponse {
   current: CurrentWeather;
   current_units: Record<string, string>;
 }
@@ -74,9 +65,12 @@ const WMO_CODES: Record<number, string> = {
   99: "Thunderstorm with heavy hail",
 };
 
-// ─── Helper Functions ─────────────────────────────────────────────────────────
+// ─── API Functions ───────────────────────────────────────────────────────────
 
-async function geocodeCity(city: string): Promise<GeoResult | null> {
+/**
+ * Geocode a city name to coordinates.
+ */
+export async function geocodeCity(city: string): Promise<GeoResult | null> {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
 
   const response = await fetch(url);
@@ -94,7 +88,10 @@ async function geocodeCity(city: string): Promise<GeoResult | null> {
   return data.results[0];
 }
 
-async function fetchWeather(
+/**
+ * Fetch current weather for coordinates.
+ */
+export async function fetchWeather(
   latitude: number,
   longitude: number
 ): Promise<WeatherResponse> {
@@ -123,7 +120,10 @@ async function fetchWeather(
   return (await response.json()) as WeatherResponse;
 }
 
-function formatWeatherReport(
+/**
+ * Format weather data into a human-readable report.
+ */
+export function formatWeatherReport(
   location: GeoResult,
   weather: WeatherResponse
 ): string {
@@ -150,52 +150,3 @@ function formatWeatherReport(
     `Wind: ${current.wind_speed_10m} ${current_units.wind_speed_10m} from ${current.wind_direction_10m}°`,
   ].join("\n");
 }
-
-// ─── Tool Registration ────────────────────────────────────────────────────────
-
-server.tool(
-  "get_weather",
-  "Get current weather conditions for a city. Returns temperature, humidity, wind, and conditions.",
-  {
-    city: z
-      .string()
-      .min(1, "City name cannot be empty")
-      .describe(
-        "City name to get weather for (e.g., 'London', 'Tokyo', 'New York')"
-      ),
-  },
-  async ({ city }) => {
-    try {
-      const location = await geocodeCity(city);
-
-      if (!location) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Could not find a location matching "${city}". Try a more specific city name.`,
-            },
-          ],
-        };
-      }
-
-      const weather = await fetchWeather(location.latitude, location.longitude);
-      const report = formatWeatherReport(location, weather);
-
-      return {
-        content: [{ type: "text" as const, text: report }],
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error fetching weather for "${city}": ${message}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
-);

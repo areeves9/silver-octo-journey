@@ -1,12 +1,8 @@
 /**
- * auth.ts — JWT validation middleware + public path exclusions.
+ * auth/middleware.ts — JWT validation middleware.
  *
  * Uses `jose` to verify Auth0-issued JWTs against their JWKS endpoint.
- * createRemoteJWKSet handles all key fetching and caching internally
- * (30s cooldown, 10min max age — no custom caching code needed).
- *
- * Public paths (health, OAuth discovery/flow endpoints) skip auth entirely.
- * Protected paths (like /mcp) require a valid Bearer token.
+ * Public paths skip auth entirely. Protected paths require valid Bearer token.
  *
  * Error responses use JSON-RPC 2.0 format since MCP uses JSON-RPC.
  */
@@ -14,12 +10,10 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { Request, Response, NextFunction } from "express";
-import { config } from "./config.js";
-import { jsonRpcError, JsonRpcErrorCode } from "./jsonrpc.js";
+import { config } from "../config/index.js";
+import { jsonRpcError, JsonRpcErrorCode } from "../shared/index.js";
 
 // ─── Type Augmentation ────────────────────────────────────────────────────────
-// Attach MCP SDK's AuthInfo to req.auth so downstream handlers + transport
-// see the correct type. This must match what StreamableHTTPServerTransport expects.
 
 declare module "express-serve-static-core" {
   interface Request {
@@ -28,12 +22,10 @@ declare module "express-serve-static-core" {
 }
 
 // ─── JWKS Setup (module-level singleton) ──────────────────────────────────────
-// Fetches keys lazily on first use, then caches automatically.
 
 const JWKS = createRemoteJWKSet(new URL(config.auth0.jwksUri));
 
 // ─── Public Paths ─────────────────────────────────────────────────────────────
-// These paths skip JWT validation entirely. O(1) Set lookup.
 
 const PUBLIC_PATHS: ReadonlySet<string> = new Set([
   "/health",
@@ -50,15 +42,6 @@ const PUBLIC_PATHS: ReadonlySet<string> = new Set([
 
 /**
  * Express middleware that validates JWT Bearer tokens.
- *
- * - Public paths: skipped, calls next() immediately
- * - Missing/invalid token: returns 401 JSON-RPC error
- * - Valid token: attaches AuthInfo to req.auth (MCP SDK shape), calls next()
- *
- * Auth0 JWT claims used:
- *   - azp (authorized party) → clientId
- *   - scope (space-delimited string) → scopes[]
- *   - exp (expiration) → expiresAt
  */
 export function jwtAuth() {
   return async (
@@ -98,10 +81,10 @@ export function jwtAuth() {
       // 4. Build AuthInfo (MCP SDK expected shape) from JWT claims
       const authInfo: AuthInfo = {
         token,
-        clientId: (payload.azp as string) ?? (payload.sub as string) ?? "unknown",
-        scopes: typeof payload.scope === "string"
-          ? payload.scope.split(" ")
-          : [],
+        clientId:
+          (payload.azp as string) ?? (payload.sub as string) ?? "unknown",
+        scopes:
+          typeof payload.scope === "string" ? payload.scope.split(" ") : [],
         expiresAt: payload.exp,
       };
 

@@ -1,9 +1,7 @@
 /**
- * oauth-metadata.ts — OAuth/OIDC discovery metadata builders.
+ * oauth/metadata.ts — OAuth/OIDC discovery metadata builders.
  *
- * DRYs up the repeated metadata object construction in the discovery endpoints.
- * Both /.well-known/openid-configuration and /.well-known/oauth-authorization-server
- * share ~80% of their fields.
+ * DRYs up the repeated metadata object construction in discovery endpoints.
  */
 
 export interface OAuthMetadataConfig {
@@ -58,7 +56,6 @@ function buildBaseMetadata(config: OAuthMetadataConfig): BaseMetadata {
 
 /**
  * Build OpenID Connect discovery metadata.
- * Used by /.well-known/openid-configuration
  */
 export function buildOpenIdConfiguration(
   config: OAuthMetadataConfig
@@ -72,7 +69,6 @@ export function buildOpenIdConfiguration(
 
 /**
  * Build OAuth Authorization Server metadata (RFC 8414).
- * Used by /.well-known/oauth-authorization-server
  */
 export function buildOAuthServerMetadata(
   config: OAuthMetadataConfig

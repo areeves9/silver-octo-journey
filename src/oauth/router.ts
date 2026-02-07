@@ -13,7 +13,28 @@ import { logger } from "../shared/index.js";
 const log = logger.child({ module: "oauth-proxy" });
 
 /**
+ * Extract client credentials from Basic auth header.
+ * Returns { clientId, clientSecret } or null if not present.
+ */
+function extractBasicAuth(
+  authHeader: string | undefined
+): { clientId: string; clientSecret: string } | null {
+  if (!authHeader?.startsWith("Basic ")) {
+    return null;
+  }
+  try {
+    const encoded = authHeader.slice(6); // Remove "Basic "
+    const decoded = Buffer.from(encoded, "base64").toString("utf-8");
+    const [clientId, clientSecret = ""] = decoded.split(":");
+    return clientId ? { clientId, clientSecret } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Proxy a POST request to an upstream URL.
+ * Extracts Basic auth credentials and adds them to the body for Auth0.
  */
 async function proxyPost(
   targetUrl: string,
@@ -23,13 +44,25 @@ async function proxyPost(
   try {
     const contentType = req.headers["content-type"] ?? "application/json";
 
+    // Extract client credentials from Basic auth header if present
+    const basicAuth = extractBasicAuth(req.headers.authorization);
+
+    // Build the body, injecting client credentials from Basic auth
+    let bodyParams: Record<string, string> = { ...req.body };
+    if (basicAuth) {
+      if (!bodyParams.client_id) {
+        bodyParams.client_id = basicAuth.clientId;
+      }
+      if (!bodyParams.client_secret && basicAuth.clientSecret) {
+        bodyParams.client_secret = basicAuth.clientSecret;
+      }
+    }
+
     let body: string;
     if (contentType.includes("application/json")) {
-      body = JSON.stringify(req.body);
+      body = JSON.stringify(bodyParams);
     } else {
-      body = new URLSearchParams(
-        req.body as Record<string, string>
-      ).toString();
+      body = new URLSearchParams(bodyParams).toString();
     }
 
     // Log the outgoing request (redact sensitive data)

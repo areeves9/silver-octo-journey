@@ -15,11 +15,12 @@
 
 import express from "express";
 import cors from "cors";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { config } from "./config.js";
 import { jwtAuth } from "./auth.js";
 import { createOAuthProxyRouter } from "./oauth-proxy.js";
 import { server } from "./server.js";
+import { handleMcpRequest } from "./mcp-handler.js";
+import { jsonRpcError, JsonRpcErrorCode } from "./jsonrpc.js";
 
 // Side-effect import: registers tools on the server instance
 import "./tools.js";
@@ -66,71 +67,9 @@ app.get("/.well-known/oauth-protected-resource", (_req, res) => {
 });
 
 // ─── MCP Endpoint (protected — JWT validated by jwtAuth) ──────────────────────
-app.post("/mcp", async (req, res) => {
-  try {
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-    });
-    res.on("close", () => {
-      transport.close();
-    });
-    await server.connect(transport);
-    await transport.handleRequest(req, res, req.body);
-  } catch (error) {
-    console.error("[mcp] Error handling request:", error);
-    if (!res.headersSent) {
-      res.status(500).json({
-        jsonrpc: "2.0",
-        error: { code: -32603, message: "Internal server error" },
-        id: null,
-      });
-    }
-  }
-});
-
-// Support GET and DELETE for SSE streams and session management
-app.get("/mcp", async (req, res) => {
-  try {
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-    });
-    res.on("close", () => {
-      transport.close();
-    });
-    await server.connect(transport);
-    await transport.handleRequest(req, res);
-  } catch (error) {
-    console.error("[mcp] Error handling SSE request:", error);
-    if (!res.headersSent) {
-      res.status(500).json({
-        jsonrpc: "2.0",
-        error: { code: -32603, message: "Internal server error" },
-        id: null,
-      });
-    }
-  }
-});
-
-app.delete("/mcp", async (req, res) => {
-  try {
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-    });
-    res.on("close", () => {
-      transport.close();
-    });
-    await server.connect(transport);
-    await transport.handleRequest(req, res);
-  } catch (error) {
-    console.error("[mcp] Error handling session termination:", error);
-    if (!res.headersSent) {
-      res.status(500).json({
-        jsonrpc: "2.0",
-        error: { code: -32603, message: "Internal server error" },
-        id: null,
-      });
-    }
-  }
+// Handles POST (requests), GET (SSE streams), and DELETE (session termination)
+app.all("/mcp", async (req, res) => {
+  await handleMcpRequest(req, res, server);
 });
 
 // ─── 5. Error Handler ─────────────────────────────────────────────────────────
@@ -143,11 +82,11 @@ app.use(
   ) => {
     console.error("[server] Unhandled error:", err);
     if (!res.headersSent) {
-      res.status(500).json({
-        jsonrpc: "2.0",
-        error: { code: -32603, message: "Internal server error" },
-        id: null,
-      });
+      res
+        .status(500)
+        .json(
+          jsonRpcError(JsonRpcErrorCode.INTERNAL_ERROR, "Internal server error")
+        );
     }
   }
 );

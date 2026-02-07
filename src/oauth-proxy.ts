@@ -22,6 +22,10 @@
 
 import { Router, type Request, type Response } from "express";
 import { config } from "./config.js";
+import {
+  buildOpenIdConfiguration,
+  buildOAuthServerMetadata,
+} from "./oauth-metadata.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -91,31 +95,14 @@ export function createOAuthProxyRouter(): Router {
   const auth0Jwks = config.auth0.jwksUri;
   const auth0Register = `https://${config.auth0.domain}/oidc/register`;
 
-  const scopesSupported = ["openid", "profile", "email", "offline_access"];
+  // Metadata config for discovery endpoints
+  const metadataConfig = { serverUrl, jwksUri: auth0Jwks };
 
   // ─── Discovery: OpenID Connect Configuration ──────────────────────────
   router.get(
     "/.well-known/openid-configuration",
     (_req: Request, res: Response) => {
-      res.json({
-        issuer: serverUrl,
-        authorization_endpoint: `${serverUrl}/authorize`,
-        token_endpoint: `${serverUrl}/token`,
-        registration_endpoint: `${serverUrl}/register`,
-        end_session_endpoint: `${serverUrl}/logout`,
-        jwks_uri: auth0Jwks,
-        response_types_supported: ["code"],
-        grant_types_supported: ["authorization_code", "refresh_token"],
-        code_challenge_methods_supported: ["S256"],
-        scopes_supported: scopesSupported,
-        token_endpoint_auth_methods_supported: [
-          "client_secret_basic",
-          "client_secret_post",
-          "none",
-        ],
-        subject_types_supported: ["public"],
-        id_token_signing_alg_values_supported: ["RS256"],
-      });
+      res.json(buildOpenIdConfiguration(metadataConfig));
     }
   );
 
@@ -123,23 +110,7 @@ export function createOAuthProxyRouter(): Router {
   router.get(
     "/.well-known/oauth-authorization-server",
     (_req: Request, res: Response) => {
-      res.json({
-        issuer: serverUrl,
-        authorization_endpoint: `${serverUrl}/authorize`,
-        token_endpoint: `${serverUrl}/token`,
-        registration_endpoint: `${serverUrl}/register`,
-        end_session_endpoint: `${serverUrl}/logout`,
-        jwks_uri: auth0Jwks,
-        response_types_supported: ["code"],
-        grant_types_supported: ["authorization_code", "refresh_token"],
-        code_challenge_methods_supported: ["S256"],
-        scopes_supported: scopesSupported,
-        token_endpoint_auth_methods_supported: [
-          "client_secret_basic",
-          "client_secret_post",
-          "none",
-        ],
-      });
+      res.json(buildOAuthServerMetadata(metadataConfig));
     }
   );
 

@@ -15,6 +15,7 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { Request, Response, NextFunction } from "express";
 import { config } from "./config.js";
+import { jsonRpcError, JsonRpcErrorCode } from "./jsonrpc.js";
 
 // ─── Type Augmentation ────────────────────────────────────────────────────────
 // Attach MCP SDK's AuthInfo to req.auth so downstream handlers + transport
@@ -73,14 +74,14 @@ export function jwtAuth() {
     // 2. Extract Bearer token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({
-        jsonrpc: "2.0",
-        error: {
-          code: -32000,
-          message: "Missing or invalid Authorization header",
-        },
-        id: null,
-      });
+      res
+        .status(401)
+        .json(
+          jsonRpcError(
+            JsonRpcErrorCode.AUTH_ERROR,
+            "Missing or invalid Authorization header"
+          )
+        );
       return;
     }
 
@@ -107,11 +108,11 @@ export function jwtAuth() {
       req.auth = authInfo;
       next();
     } catch {
-      res.status(401).json({
-        jsonrpc: "2.0",
-        error: { code: -32000, message: "Invalid or expired token" },
-        id: null,
-      });
+      res
+        .status(401)
+        .json(
+          jsonRpcError(JsonRpcErrorCode.AUTH_ERROR, "Invalid or expired token")
+        );
     }
   };
 }

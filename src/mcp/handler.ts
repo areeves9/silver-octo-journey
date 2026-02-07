@@ -88,16 +88,6 @@ function getOrCreateSession(sessionId: string | undefined): SessionResult {
     };
   }
 
-  // New session — enforce cap
-  if (sessions.size >= config.session.maxSessions) {
-    log.warn({ current: sessions.size, max: config.session.maxSessions }, "Session limit reached");
-    return {
-      ok: false,
-      status: 503,
-      body: jsonRpcError(JsonRpcErrorCode.INTERNAL_ERROR, "Too many active sessions"),
-    };
-  }
-
   return { ok: true, session: createSession(randomUUID()), isNew: true };
 }
 

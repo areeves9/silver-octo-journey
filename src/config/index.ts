@@ -32,7 +32,6 @@ const envSchema = z.object({
 
   // Sessions
   MCP_SESSION_TTL_MINUTES: z.coerce.number().default(30),
-  MCP_MAX_SESSIONS: z.coerce.number().default(100),
 
   // Auth0
   AUTH0_DOMAIN: z.string().min(1, "AUTH0_DOMAIN is required"),
@@ -75,7 +74,6 @@ export const config = {
   // Sessions
   session: {
     ttlMs: env.MCP_SESSION_TTL_MINUTES * 60 * 1000,
-    maxSessions: env.MCP_MAX_SESSIONS,
   },
 
   // Auth0

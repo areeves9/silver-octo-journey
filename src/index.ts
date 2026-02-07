@@ -7,6 +7,9 @@
  * All configuration and wiring happens in app.ts.
  */
 
+// Load .env before anything else
+import "dotenv/config";
+
 import { config } from "./config/index.js";
 import { logger } from "./shared/index.js";
 import { createApp } from "./app.js";

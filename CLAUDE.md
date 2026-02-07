@@ -34,12 +34,25 @@ This is an **MCP (Model Context Protocol) server** designed as a spoke for feder
 | `tools/` | Tool registry; each tool in its own subdirectory |
 | `shared/` | Utilities: `jsonrpc.ts` (error responses), `logger.ts` (structured logging) |
 
+### Module File Pattern
+
+Each module follows a consistent structure for templates/composability:
+
+| File | Purpose |
+|------|---------|
+| `types.ts` | TypeScript interfaces and type definitions |
+| `constants.ts` | Immutable values (error codes, configs, lookup tables) |
+| `index.ts` | Re-exports everything; contains main logic or orchestration |
+| `*.ts` | Domain-specific logic (e.g., `api.ts`, `middleware.ts`, `router.ts`) |
+
 ### Adding a New Tool
 
-1. Create `src/tools/<name>/api.ts` for external API helpers
-2. Create `src/tools/<name>/index.ts` with `register<Name>Tool(server: McpServer)` function
-3. Import and call the registration function in `src/tools/index.ts`
-4. Add to `toolManifest` array in `src/tools/index.ts`
+1. Create `src/tools/<name>/types.ts` for type definitions
+2. Create `src/tools/<name>/constants.ts` for static values
+3. Create `src/tools/<name>/api.ts` for external API helpers
+4. Create `src/tools/<name>/index.ts` with `register<Name>Tool(server: McpServer)` and re-exports
+5. Import and call the registration function in `src/tools/index.ts`
+6. Add to `toolManifest` array in `src/tools/index.ts`
 
 ### Environment Variables
 
@@ -52,3 +65,12 @@ Optional:
 - `PORT` — Server port (default: 3000)
 - `NODE_ENV` — `development` | `production` | `test`
 - `LOG_LEVEL` — `debug` | `info` | `warn` | `error`
+
+### Hub/Spoke Architecture
+
+The `spokeManifest` in `manifest.ts` exposes metadata for hub discovery:
+- `tags` for categorization (weather, geocoding, utility, etc.)
+- `tools` list from `toolManifest` in `tools/index.ts`
+- Auth requirements and endpoints
+
+The app factory pattern in `app.ts` allows this server to be submounted into a larger Express application (like a hub) via `app.use('/weather', createWeatherApp())`.

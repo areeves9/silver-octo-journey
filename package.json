@@ -11,12 +11,17 @@
     "dev": "tsx src/index.ts",
     "inspect": "npx @modelcontextprotocol/inspector node build/index.js"
   },
-  "keywords": ["mcp", "weather", "open-meteo"],
+  "keywords": [
+    "mcp",
+    "weather",
+    "open-meteo"
+  ],
   "author": "Andrew",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.4",
     "express": "^4.21.0",
     "jose": "^6.0.11",
     "zod": "^3.24.4"

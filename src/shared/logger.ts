@@ -1,105 +1,74 @@
 /**
- * shared/logger.ts — Centralized logging singleton.
+ * shared/logger.ts — Centralized Pino logging singleton.
  *
- * Provides structured logging with consistent formatting.
- * Can be extended to use pino, winston, etc. in the future.
+ * Provides structured JSON logging with:
+ * - Environment-based configuration
+ * - Pretty printing in development
+ * - Request/response logging middleware
+ * - Child loggers for module scoping
  */
 
-import type { LogLevel, LogEntry } from "./types.js";
-import { LOG_LEVEL_PRIORITY } from "./constants.js";
+import pino from "pino";
+import { pinoHttp, type HttpLogger, type Options } from "pino-http";
+import type { IncomingMessage, ServerResponse } from "http";
+import type { LogLevel } from "./types.js";
 
-class Logger {
-  private minLevel: LogLevel;
+// ─── Configuration ───────────────────────────────────────────────────────────
 
-  constructor(minLevel: LogLevel = "info") {
-    this.minLevel = minLevel;
-  }
+const isDev = process.env.NODE_ENV !== "production";
+const level = (process.env.LOG_LEVEL as LogLevel) ?? (isDev ? "debug" : "info");
 
-  /**
-   * Set the minimum log level.
-   */
-  setLevel(level: LogLevel): void {
-    this.minLevel = level;
-  }
+// ─── Pino Logger Singleton ───────────────────────────────────────────────────
 
-  /**
-   * Create a child logger scoped to a module.
-   */
-  child(module: string): ModuleLogger {
-    return new ModuleLogger(this, module);
-  }
+export const logger = pino({
+  level,
+  transport: isDev
+    ? {
+        target: "pino-pretty",
+        options: {
+          colorize: true,
+          translateTime: "SYS:standard",
+          ignore: "pid,hostname",
+        },
+      }
+    : undefined, // JSON output in production
+  base: {
+    env: process.env.NODE_ENV ?? "development",
+  },
+});
 
-  /**
-   * Internal log method.
-   */
-  log(entry: LogEntry): void {
-    if (LOG_LEVEL_PRIORITY[entry.level] < LOG_LEVEL_PRIORITY[this.minLevel]) {
-      return;
-    }
+// ─── HTTP Request Logger Middleware ──────────────────────────────────────────
 
-    const prefix = `[${entry.timestamp}] [${entry.level.toUpperCase()}] [${entry.module}]`;
-    const message = entry.data
-      ? `${prefix} ${entry.message} ${JSON.stringify(entry.data)}`
-      : `${prefix} ${entry.message}`;
+const httpLoggerOptions: Options = {
+  logger,
+  // Don't log health checks
+  autoLogging: {
+    ignore: (req: IncomingMessage) => req.url === "/health",
+  },
+  // Custom log level based on status code
+  customLogLevel: (
+    _req: IncomingMessage,
+    res: ServerResponse,
+    err: Error | undefined
+  ) => {
+    if (res.statusCode >= 500 || err) return "error";
+    if (res.statusCode >= 400) return "warn";
+    return "info";
+  },
+  // Customize what gets logged
+  customSuccessMessage: (req: IncomingMessage, res: ServerResponse) => {
+    return `${req.method} ${req.url} ${res.statusCode}`;
+  },
+  customErrorMessage: (req: IncomingMessage, res: ServerResponse) => {
+    return `${req.method} ${req.url} ${res.statusCode}`;
+  },
+  // Redact sensitive headers
+  redact: ["req.headers.authorization", "req.headers.cookie"],
+};
 
-    switch (entry.level) {
-      case "error":
-        console.error(message);
-        break;
-      case "warn":
-        console.warn(message);
-        break;
-      default:
-        console.log(message);
-    }
-  }
-}
+export const httpLogger: HttpLogger = pinoHttp(httpLoggerOptions);
 
-class ModuleLogger {
-  constructor(
-    private readonly parent: Logger,
-    private readonly module: string
-  ) {}
+// ─── Type Export ─────────────────────────────────────────────────────────────
 
-  private createEntry(
-    level: LogLevel,
-    message: string,
-    data?: Record<string, unknown>
-  ): LogEntry {
-    return {
-      level,
-      module: this.module,
-      message,
-      data,
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  debug(message: string, data?: Record<string, unknown>): void {
-    this.parent.log(this.createEntry("debug", message, data));
-  }
-
-  info(message: string, data?: Record<string, unknown>): void {
-    this.parent.log(this.createEntry("info", message, data));
-  }
-
-  warn(message: string, data?: Record<string, unknown>): void {
-    this.parent.log(this.createEntry("warn", message, data));
-  }
-
-  error(message: string, data?: Record<string, unknown>): void {
-    this.parent.log(this.createEntry("error", message, data));
-  }
-}
-
-// ─── Singleton Instance ──────────────────────────────────────────────────────
-
-/**
- * Global logger singleton.
- * Use logger.child("module-name") to create scoped loggers.
- */
-export const logger = new Logger(
-  (process.env.LOG_LEVEL as LogLevel) ?? "info"
-);
-
-export type { ModuleLogger };
+export type Logger = typeof logger;
+export type ChildLogger = ReturnType<typeof logger.child>;

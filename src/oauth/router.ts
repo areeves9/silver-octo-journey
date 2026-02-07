@@ -8,6 +8,9 @@
 import { Router, type Request, type Response } from "express";
 import type { OAuthProxyConfig } from "./types.js";
 import { buildOpenIdConfiguration, buildOAuthServerMetadata } from "./metadata.js";
+import { logger } from "../shared/index.js";
+
+const log = logger.child({ module: "oauth-proxy" });
 
 /**
  * Proxy a POST request to an upstream URL.
@@ -29,6 +32,16 @@ async function proxyPost(
       ).toString();
     }
 
+    // Log the outgoing request (redact sensitive data)
+    const redactedBody = body.replace(
+      /client_secret=[^&]+/g,
+      "client_secret=[REDACTED]"
+    );
+    log.debug(
+      { targetUrl, contentType, body: redactedBody },
+      "Proxying request to Auth0"
+    );
+
     const upstream = await fetch(targetUrl, {
       method: "POST",
       headers: { "Content-Type": contentType },
@@ -36,9 +49,20 @@ async function proxyPost(
     });
 
     const responseBody = await upstream.text();
+
+    // Log the response (especially errors)
+    if (upstream.status >= 400) {
+      log.warn(
+        { targetUrl, status: upstream.status, response: responseBody },
+        "Auth0 returned error response"
+      );
+    } else {
+      log.debug({ targetUrl, status: upstream.status }, "Auth0 request successful");
+    }
+
     res.status(upstream.status).type("application/json").send(responseBody);
   } catch (error) {
-    console.error(`[oauth-proxy] Proxy to ${targetUrl} failed:`, error);
+    log.error({ err: error, targetUrl }, "Proxy to Auth0 failed");
     res.status(502).json({
       error: "proxy_error",
       error_description: `Failed to reach authorization server: ${targetUrl}`,
@@ -79,6 +103,14 @@ export function createOAuthRouter(config: OAuthProxyConfig): Router {
       params.set("audience", auth0.audience);
     }
     const targetUrl = `${auth0Authorize}?${params.toString()}`;
+    log.debug(
+      {
+        clientId: params.get("client_id"),
+        redirectUri: params.get("redirect_uri"),
+        scope: params.get("scope"),
+      },
+      "Redirecting to Auth0 authorize"
+    );
     res.redirect(302, targetUrl);
   });
 

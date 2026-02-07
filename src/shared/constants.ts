@@ -12,11 +12,3 @@ export const JsonRpcErrorCode = {
 
 export type JsonRpcErrorCode =
   (typeof JsonRpcErrorCode)[keyof typeof JsonRpcErrorCode];
-
-/** Priority mapping for log levels */
-export const LOG_LEVEL_PRIORITY: Record<string, number> = {
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3,
-} as const;

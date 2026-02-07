@@ -11,14 +11,14 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import { config } from "./config/index.js";
-import { logger } from "./shared/index.js";
+import { logger, httpLogger } from "./shared/index.js";
 import { jsonRpcError, JsonRpcErrorCode } from "./shared/index.js";
 import { jwtAuth } from "./auth/index.js";
 import { createOAuthRouter } from "./oauth/index.js";
 import { server, handleMcpRequest } from "./mcp/index.js";
 import { registerAllTools } from "./tools/index.js";
 
-const log = logger.child("app");
+const log = logger.child({ module: "app" });
 
 /**
  * Create and configure the Express application.
@@ -42,14 +42,17 @@ export function createApp(): Express {
     })
   );
 
-  // ─── 2. Body Parsing ────────────────────────────────────────────────────────
+  // ─── 2. Request Logging ────────────────────────────────────────────────────
+  app.use(httpLogger);
+
+  // ─── 3. Body Parsing ────────────────────────────────────────────────────────
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // ─── 3. JWT Auth ────────────────────────────────────────────────────────────
+  // ─── 4. JWT Auth ────────────────────────────────────────────────────────────
   app.use(jwtAuth());
 
-  // ─── 4. Routes ──────────────────────────────────────────────────────────────
+  // ─── 5. Routes ──────────────────────────────────────────────────────────────
 
   // Health check (public)
   app.get("/health", (_req, res) => {
@@ -79,7 +82,7 @@ export function createApp(): Express {
     await handleMcpRequest(req, res, server);
   });
 
-  // ─── 5. Error Handler ───────────────────────────────────────────────────────
+  // ─── 6. Error Handler ───────────────────────────────────────────────────────
   app.use(
     (
       err: Error,
@@ -87,7 +90,7 @@ export function createApp(): Express {
       res: express.Response,
       _next: express.NextFunction
     ) => {
-      log.error("Unhandled error", { error: err.message, stack: err.stack });
+      log.error({ err }, "Unhandled error");
       if (!res.headersSent) {
         res
           .status(500)

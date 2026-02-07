@@ -4,15 +4,8 @@
 
 // ─── Logger Types ────────────────────────────────────────────────────────────
 
-export type LogLevel = "debug" | "info" | "warn" | "error";
-
-export interface LogEntry {
-  level: LogLevel;
-  module: string;
-  message: string;
-  data?: Record<string, unknown>;
-  timestamp: string;
-}
+/** Pino-compatible log levels */
+export type LogLevel = "fatal" | "error" | "warn" | "info" | "debug" | "trace";
 
 // ─── JSON-RPC Types ──────────────────────────────────────────────────────────
 

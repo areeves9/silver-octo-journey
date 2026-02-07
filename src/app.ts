@@ -15,8 +15,7 @@ import { logger, httpLogger } from "./shared/index.js";
 import { jsonRpcError, JsonRpcErrorCode } from "./shared/index.js";
 import { jwtAuth } from "./auth/index.js";
 import { createOAuthRouter } from "./oauth/index.js";
-import { server, handleMcpRequest } from "./mcp/index.js";
-import { registerAllTools } from "./tools/index.js";
+import { handleMcpRequest } from "./mcp/index.js";
 
 const log = logger.child({ module: "app" });
 
@@ -27,9 +26,6 @@ const log = logger.child({ module: "app" });
  */
 export function createApp(): Express {
   const app = express();
-
-  // Register tools on the MCP server
-  registerAllTools(server);
 
   // ─── 1. CORS ────────────────────────────────────────────────────────────────
   app.use(
@@ -79,7 +75,7 @@ export function createApp(): Express {
 
   // MCP endpoint (protected)
   app.all("/mcp", async (req, res) => {
-    await handleMcpRequest(req, res, server);
+    await handleMcpRequest(req, res);
   });
 
   // ─── 6. Error Handler ───────────────────────────────────────────────────────

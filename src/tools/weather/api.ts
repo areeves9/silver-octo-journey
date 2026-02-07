@@ -1,71 +1,9 @@
 /**
- * tools/weather/api.ts — Open-Meteo API helpers.
- *
- * Contains types and functions for geocoding and weather data fetching.
+ * tools/weather/api.ts — Open-Meteo API functions.
  */
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-export interface GeoResult {
-  name: string;
-  latitude: number;
-  longitude: number;
-  country: string;
-  admin1?: string; // state/province
-}
-
-interface GeoResponse {
-  results?: GeoResult[];
-}
-
-export interface CurrentWeather {
-  temperature_2m: number;
-  relative_humidity_2m: number;
-  apparent_temperature: number;
-  wind_speed_10m: number;
-  wind_direction_10m: number;
-  weather_code: number;
-}
-
-export interface WeatherResponse {
-  current: CurrentWeather;
-  current_units: Record<string, string>;
-}
-
-// ─── WMO Weather Code Descriptions ───────────────────────────────────────────
-
-const WMO_CODES: Record<number, string> = {
-  0: "Clear sky",
-  1: "Mainly clear",
-  2: "Partly cloudy",
-  3: "Overcast",
-  45: "Foggy",
-  48: "Depositing rime fog",
-  51: "Light drizzle",
-  53: "Moderate drizzle",
-  55: "Dense drizzle",
-  56: "Light freezing drizzle",
-  57: "Dense freezing drizzle",
-  61: "Slight rain",
-  63: "Moderate rain",
-  65: "Heavy rain",
-  66: "Light freezing rain",
-  67: "Heavy freezing rain",
-  71: "Slight snowfall",
-  73: "Moderate snowfall",
-  75: "Heavy snowfall",
-  77: "Snow grains",
-  80: "Slight rain showers",
-  81: "Moderate rain showers",
-  82: "Violent rain showers",
-  85: "Slight snow showers",
-  86: "Heavy snow showers",
-  95: "Thunderstorm",
-  96: "Thunderstorm with slight hail",
-  99: "Thunderstorm with heavy hail",
-};
-
-// ─── API Functions ───────────────────────────────────────────────────────────
+import type { GeoResult, GeoResponse, WeatherResponse } from "./types.js";
+import { WMO_CODES } from "./constants.js";
 
 /**
  * Geocode a city name to coordinates.

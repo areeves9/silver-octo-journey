@@ -1,37 +1,20 @@
 /**
  * oauth/metadata.ts — OAuth/OIDC discovery metadata builders.
- *
- * DRYs up the repeated metadata object construction in discovery endpoints.
  */
 
-export interface OAuthMetadataConfig {
-  serverUrl: string;
-  jwksUri: string;
-}
-
-interface BaseMetadata {
-  issuer: string;
-  authorization_endpoint: string;
-  token_endpoint: string;
-  registration_endpoint: string;
-  end_session_endpoint: string;
-  jwks_uri: string;
-  response_types_supported: string[];
-  grant_types_supported: string[];
-  code_challenge_methods_supported: string[];
-  scopes_supported: string[];
-  token_endpoint_auth_methods_supported: string[];
-}
-
-interface OpenIdConfiguration extends BaseMetadata {
-  subject_types_supported: string[];
-  id_token_signing_alg_values_supported: string[];
-}
-
-type OAuthAuthorizationServerMetadata = BaseMetadata;
-
-const SCOPES_SUPPORTED = ["openid", "profile", "email", "offline_access"];
-const TOKEN_AUTH_METHODS = ["client_secret_basic", "client_secret_post", "none"];
+import type {
+  OAuthMetadataConfig,
+  BaseMetadata,
+  OpenIdConfiguration,
+  OAuthAuthorizationServerMetadata,
+} from "./types.js";
+import {
+  SCOPES_SUPPORTED,
+  TOKEN_AUTH_METHODS,
+  RESPONSE_TYPES_SUPPORTED,
+  GRANT_TYPES_SUPPORTED,
+  CODE_CHALLENGE_METHODS,
+} from "./constants.js";
 
 /**
  * Build the base metadata object shared by both discovery endpoints.
@@ -46,11 +29,11 @@ function buildBaseMetadata(config: OAuthMetadataConfig): BaseMetadata {
     registration_endpoint: `${serverUrl}/register`,
     end_session_endpoint: `${serverUrl}/logout`,
     jwks_uri: jwksUri,
-    response_types_supported: ["code"],
-    grant_types_supported: ["authorization_code", "refresh_token"],
-    code_challenge_methods_supported: ["S256"],
-    scopes_supported: SCOPES_SUPPORTED,
-    token_endpoint_auth_methods_supported: TOKEN_AUTH_METHODS,
+    response_types_supported: [...RESPONSE_TYPES_SUPPORTED],
+    grant_types_supported: [...GRANT_TYPES_SUPPORTED],
+    code_challenge_methods_supported: [...CODE_CHALLENGE_METHODS],
+    scopes_supported: [...SCOPES_SUPPORTED],
+    token_endpoint_auth_methods_supported: [...TOKEN_AUTH_METHODS],
   };
 }
 

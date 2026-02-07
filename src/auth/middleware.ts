@@ -2,9 +2,6 @@
  * auth/middleware.ts — JWT validation middleware.
  *
  * Uses `jose` to verify Auth0-issued JWTs against their JWKS endpoint.
- * Public paths skip auth entirely. Protected paths require valid Bearer token.
- *
- * Error responses use JSON-RPC 2.0 format since MCP uses JSON-RPC.
  */
 
 import { createRemoteJWKSet, jwtVerify } from "jose";
@@ -12,33 +9,14 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { Request, Response, NextFunction } from "express";
 import { config } from "../config/index.js";
 import { jsonRpcError, JsonRpcErrorCode } from "../shared/index.js";
+import { PUBLIC_PATHS } from "./constants.js";
 
-// ─── Type Augmentation ────────────────────────────────────────────────────────
-
-declare module "express-serve-static-core" {
-  interface Request {
-    auth?: AuthInfo;
-  }
-}
+// Import types for Express augmentation side effect
+import "./types.js";
 
 // ─── JWKS Setup (module-level singleton) ──────────────────────────────────────
 
 const JWKS = createRemoteJWKSet(new URL(config.auth0.jwksUri));
-
-// ─── Public Paths ─────────────────────────────────────────────────────────────
-
-const PUBLIC_PATHS: ReadonlySet<string> = new Set([
-  "/health",
-  "/.well-known/openid-configuration",
-  "/.well-known/oauth-authorization-server",
-  "/.well-known/oauth-protected-resource",
-  "/authorize",
-  "/token",
-  "/register",
-  "/logout",
-]);
-
-// ─── Middleware ────────────────────────────────────────────────────────────────
 
 /**
  * Express middleware that validates JWT Bearer tokens.

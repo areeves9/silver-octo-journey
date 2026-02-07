@@ -5,24 +5,11 @@
  * Can be extended to use pino, winston, etc. in the future.
  */
 
-export type LogLevel = "debug" | "info" | "warn" | "error";
-
-interface LogEntry {
-  level: LogLevel;
-  module: string;
-  message: string;
-  data?: Record<string, unknown>;
-  timestamp: string;
-}
+import type { LogLevel, LogEntry } from "./types.js";
+import { LOG_LEVEL_PRIORITY } from "./constants.js";
 
 class Logger {
   private minLevel: LogLevel;
-  private readonly levelPriority: Record<LogLevel, number> = {
-    debug: 0,
-    info: 1,
-    warn: 2,
-    error: 3,
-  };
 
   constructor(minLevel: LogLevel = "info") {
     this.minLevel = minLevel;
@@ -46,7 +33,7 @@ class Logger {
    * Internal log method.
    */
   log(entry: LogEntry): void {
-    if (this.levelPriority[entry.level] < this.levelPriority[this.minLevel]) {
+    if (LOG_LEVEL_PRIORITY[entry.level] < LOG_LEVEL_PRIORITY[this.minLevel]) {
       return;
     }
 

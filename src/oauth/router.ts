@@ -3,28 +3,11 @@
  *
  * Acts as a front door for OAuth flows. Clients talk to this server,
  * which redirects/proxies to the actual auth provider (Auth0).
- *
- * This pattern enables:
- * - Single origin for clients
- * - Provider swapping without client changes
- * - Submounting into larger applications
  */
 
 import { Router, type Request, type Response } from "express";
+import type { OAuthProxyConfig } from "./types.js";
 import { buildOpenIdConfiguration, buildOAuthServerMetadata } from "./metadata.js";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-export interface OAuthProxyConfig {
-  serverUrl: string;
-  auth0: {
-    domain: string;
-    audience: string;
-    jwksUri: string;
-  };
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
  * Proxy a POST request to an upstream URL.
@@ -63,13 +46,8 @@ async function proxyPost(
   }
 }
 
-// ─── Router Factory ──────────────────────────────────────────────────────────
-
 /**
  * Create an Express Router with OAuth/OIDC forwarding endpoints.
- *
- * This router can be mounted at any path in a parent application,
- * enabling submounting for hub-spoke architectures.
  */
 export function createOAuthRouter(config: OAuthProxyConfig): Router {
   const router = Router();

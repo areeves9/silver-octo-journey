@@ -10,6 +10,10 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { geocodeCity, fetchWeather, formatWeatherReport } from "./api.js";
 
+// Re-export types and constants for consumers
+export * from "./types.js";
+export * from "./constants.js";
+
 /**
  * Register the get_weather tool on an MCP server.
  */

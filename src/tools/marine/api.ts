@@ -4,6 +4,7 @@
 
 import type { MarineResponse } from "./types.js";
 import { getSeaState, getCardinalDirection, getWaveConditions } from "./constants.js";
+import { fetchWithTimeout } from "../shared/fetch.js";
 
 /**
  * Fetch current marine weather for coordinates.
@@ -33,7 +34,7 @@ export async function fetchMarineWeather(
   });
 
   const url = `https://marine-api.open-meteo.com/v1/marine?${params}`;
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
 
   if (!response.ok) {
     throw new Error(`Marine API returned ${response.status}`);

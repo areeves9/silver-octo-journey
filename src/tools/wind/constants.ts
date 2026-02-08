@@ -4,6 +4,9 @@
 
 import type { BeaufortScale } from "./types.js";
 
+// Re-export shared cardinal direction utility
+export { getCardinalDirection } from "../shared/directions.js";
+
 /**
  * Beaufort Wind Scale (speeds in mph).
  */
@@ -28,15 +31,6 @@ export const BEAUFORT_SCALE: BeaufortScale[] = [
  */
 export function getBeaufortScale(speedMph: number): BeaufortScale {
   return BEAUFORT_SCALE.find((b) => speedMph >= b.minSpeed && speedMph <= b.maxSpeed) ?? BEAUFORT_SCALE[12];
-}
-
-/**
- * Convert degrees to cardinal direction.
- */
-export function getCardinalDirection(degrees: number): string {
-  const directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
-  const index = Math.round(degrees / 22.5) % 16;
-  return directions[index];
 }
 
 /**

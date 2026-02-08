@@ -8,6 +8,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WMO_CODES } from "../weather/constants.js";
+import { getCardinalDirection } from "../shared/directions.js";
+import { getSeaState } from "../shared/sea-state.js";
+import { fetchWithTimeout } from "../shared/fetch.js";
 import type { MarineConditionsResponse, MarineAssessment, ActivitySuitability, MarineActivity } from "./types.js";
 
 // Re-export types
@@ -57,8 +60,8 @@ async function fetchMarineConditionsData(
   });
 
   const [marineRes, weatherRes] = await Promise.all([
-    fetch(`https://marine-api.open-meteo.com/v1/marine?${marineParams}`),
-    fetch(`https://api.open-meteo.com/v1/forecast?${weatherParams}`),
+    fetchWithTimeout(`https://marine-api.open-meteo.com/v1/marine?${marineParams}`),
+    fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?${weatherParams}`),
   ]);
 
   if (!marineRes.ok) {
@@ -68,8 +71,8 @@ async function fetchMarineConditionsData(
     throw new Error(`Weather API returned ${weatherRes.status}`);
   }
 
-  const marine = await marineRes.json();
-  const weather = await weatherRes.json();
+  const marine = (await marineRes.json()) as MarineConditionsResponse["marine"];
+  const weather = (await weatherRes.json()) as MarineConditionsResponse["weather"];
 
   return {
     latitude,
@@ -79,31 +82,8 @@ async function fetchMarineConditionsData(
   };
 }
 
-/**
- * Douglas Sea State scale lookup.
- */
-function getSeaState(waveHeightFeet: number): { code: number; description: string } {
-  const heightMeters = waveHeightFeet * 0.3048;
-  if (heightMeters <= 0) return { code: 0, description: "Calm (glassy)" };
-  if (heightMeters <= 0.1) return { code: 1, description: "Calm (rippled)" };
-  if (heightMeters <= 0.5) return { code: 2, description: "Smooth" };
-  if (heightMeters <= 1.25) return { code: 3, description: "Slight" };
-  if (heightMeters <= 2.5) return { code: 4, description: "Moderate" };
-  if (heightMeters <= 4) return { code: 5, description: "Rough" };
-  if (heightMeters <= 6) return { code: 6, description: "Very rough" };
-  if (heightMeters <= 9) return { code: 7, description: "High" };
-  if (heightMeters <= 14) return { code: 8, description: "Very high" };
-  return { code: 9, description: "Phenomenal" };
-}
-
-/**
- * Get cardinal direction from degrees.
- */
-function getCardinalDirection(degrees: number): string {
-  const directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
-  const index = Math.round(degrees / 22.5) % 16;
-  return directions[index];
-}
+/** Feet to meters conversion factor. */
+const FEET_TO_METERS = 0.3048;
 
 /**
  * Assess marine conditions for various activities.
@@ -112,7 +92,7 @@ function assessMarineConditions(data: MarineConditionsResponse): MarineAssessmen
   const m = data.marine.current;
   const w = data.weather.current;
 
-  const seaStateInfo = getSeaState(m.wave_height);
+  const seaStateInfo = getSeaState(m.wave_height * FEET_TO_METERS);
   const warnings: string[] = [];
   let overallSafety: MarineAssessment["overallSafety"] = "Safe";
 

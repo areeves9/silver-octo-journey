@@ -4,6 +4,7 @@
 
 import type { GeoResult, GeoResponse, WeatherResponse } from "./types.js";
 import { WMO_CODES } from "./constants.js";
+import { fetchWithTimeout } from "../shared/fetch.js";
 
 /**
  * Geocode a city name to coordinates.
@@ -11,7 +12,7 @@ import { WMO_CODES } from "./constants.js";
 export async function geocodeCity(city: string): Promise<GeoResult | null> {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
 
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
 
   if (!response.ok) {
     throw new Error(`Geocoding API returned ${response.status}`);
@@ -49,7 +50,7 @@ export async function fetchWeather(
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
 
   if (!response.ok) {
     throw new Error(`Weather API returned ${response.status}`);

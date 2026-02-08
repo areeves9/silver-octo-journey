@@ -140,7 +140,7 @@ function assessFireRisk(data: FireWeatherData): FireRiskAssessment {
     recommendations.push("Normal fire precautions apply");
   }
 
-  return { level, score, factors, recommendations };
+  return { level, score: Math.min(score, 100), factors, recommendations };
 }
 
 /**

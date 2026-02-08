@@ -34,7 +34,6 @@ export async function fetchHumidityData(
       "dew_point_2m",
       "vapour_pressure_deficit",
     ].join(","),
-    daily: ["temperature_2m_max", "temperature_2m_min"].join(","),
     temperature_unit: "fahrenheit",
     timezone: "auto",
     forecast_days: "7",

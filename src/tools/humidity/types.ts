@@ -22,12 +22,6 @@ export interface HumidityResponse {
     vapour_pressure_deficit: number[];
   };
   hourly_units: Record<string, string>;
-  daily: {
-    time: string[];
-    temperature_2m_max: number[];
-    temperature_2m_min: number[];
-  };
-  daily_units: Record<string, string>;
 }
 
 export interface ComfortLevel {

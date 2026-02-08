@@ -37,7 +37,20 @@ function cleanupStaleSessions(): void {
 }
 
 // Run cleanup every 5 minutes
-setInterval(cleanupStaleSessions, 5 * 60 * 1000);
+const cleanupInterval = setInterval(cleanupStaleSessions, 5 * 60 * 1000);
+
+/**
+ * Close all active sessions and stop the cleanup interval.
+ * Called during graceful shutdown.
+ */
+export function closeAllSessions(): void {
+  clearInterval(cleanupInterval);
+  for (const [sessionId, session] of sessions) {
+    session.transport.close();
+    sessions.delete(sessionId);
+    log.debug({ sessionId }, "Closed session during shutdown");
+  }
+}
 
 // ─── Session Management ─────────────────────────────────────────────────────
 

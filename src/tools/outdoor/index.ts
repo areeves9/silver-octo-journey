@@ -71,8 +71,8 @@ async function fetchOutdoorData(
     throw new Error(`Air Quality API returned ${aqRes.status}`);
   }
 
-  const weather = await weatherRes.json();
-  const airQuality = await aqRes.json();
+  const weather = (await weatherRes.json()) as OutdoorResponse["weather"];
+  const airQuality = (await aqRes.json()) as OutdoorResponse["airQuality"];
 
   return {
     latitude,

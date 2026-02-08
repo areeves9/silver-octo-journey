@@ -71,8 +71,8 @@ async function fetchMarineConditionsData(
     throw new Error(`Weather API returned ${weatherRes.status}`);
   }
 
-  const marine = await marineRes.json();
-  const weather = await weatherRes.json();
+  const marine = (await marineRes.json()) as MarineConditionsResponse["marine"];
+  const weather = (await weatherRes.json()) as MarineConditionsResponse["weather"];
 
   return {
     latitude,

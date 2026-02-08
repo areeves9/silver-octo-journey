@@ -8,6 +8,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { geocodeCity, type GeoResult } from "../shared/geocoding.js";
+import { getCardinalDirection } from "../shared/directions.js";
 import type { FireWeatherResponse, FireRiskLevel, FireRiskAssessment, FireWeatherData } from "./types.js";
 
 // Re-export types
@@ -142,15 +143,6 @@ function assessFireRisk(data: FireWeatherData): FireRiskAssessment {
 }
 
 /**
- * Get cardinal direction from degrees.
- */
-function getWindDirection(degrees: number): string {
-  const directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
-  const index = Math.round(degrees / 22.5) % 16;
-  return directions[index];
-}
-
-/**
  * Format fire weather report.
  */
 function formatFireWeatherReport(
@@ -168,7 +160,7 @@ function formatFireWeatherReport(
     .slice(0, 7)
     .reduce((sum, val) => sum + val, 0);
 
-  const windDir = getWindDirection(current.wind_direction_10m);
+  const windDir = getCardinalDirection(current.wind_direction_10m);
 
   const lines = [
     `Fire Weather Assessment for ${locationName}`,

@@ -35,8 +35,5 @@ export interface MarineResponse {
   daily_units?: Record<string, string>;
 }
 
-export interface SeaState {
-  code: number;
-  description: string;
-  waveHeight: string;
-}
+// Re-export SeaState from shared module for backwards compatibility
+export type { SeaState } from "../shared/sea-state.js";

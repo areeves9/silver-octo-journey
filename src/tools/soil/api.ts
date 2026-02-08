@@ -5,7 +5,7 @@
 import type { GeoResult } from "../shared/geocoding.js";
 import type { SoilResponse } from "./types.js";
 import { getMoistureLevel, getPlantingRecommendation, SOIL_DEPTHS, TEMP_DEPTHS } from "./constants.js";
-import { fetchWithTimeout } from "../shared/fetch.js";
+import { cachedFetchJson } from "../shared/fetch.js";
 
 /**
  * Fetch current soil conditions for coordinates.
@@ -34,13 +34,7 @@ export async function fetchSoilConditions(
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-  const response = await fetchWithTimeout(url);
-
-  if (!response.ok) {
-    throw new Error(`Soil API returned ${response.status}`);
-  }
-
-  return (await response.json()) as SoilResponse;
+  return cachedFetchJson<SoilResponse>(url);
 }
 
 /**

@@ -8,7 +8,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { geocodeCity, type GeoResult } from "../shared/geocoding.js";
-import { fetchWithTimeout } from "../shared/fetch.js";
+import { cachedFetchJson } from "../shared/fetch.js";
 import type { AgricultureResponse, GrowingConditions, PlantingWindow } from "./types.js";
 
 // Re-export types
@@ -48,13 +48,7 @@ async function fetchAgricultureData(
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-  const response = await fetchWithTimeout(url);
-
-  if (!response.ok) {
-    throw new Error(`Agriculture API returned ${response.status}`);
-  }
-
-  return (await response.json()) as AgricultureResponse;
+  return cachedFetchJson<AgricultureResponse>(url);
 }
 
 /**

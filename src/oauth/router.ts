@@ -79,6 +79,7 @@ async function proxyPost(
       method: "POST",
       headers: { "Content-Type": contentType },
       body,
+      signal: AbortSignal.timeout(10_000),
     });
 
     const responseBody = await upstream.text();

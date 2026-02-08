@@ -16,6 +16,9 @@ import { registerForecastTool, registerHourlyForecastTool } from "./forecast/ind
 import { registerAirQualityTool } from "./air-quality/index.js";
 import { registerMarineTool } from "./marine/index.js";
 import { registerSoilTool } from "./soil/index.js";
+import { registerWindTool } from "./wind/index.js";
+import { registerPrecipitationTool } from "./precipitation/index.js";
+import { registerHumidityTool } from "./humidity/index.js";
 
 // Layer 2: Vertical Compound Tools
 import { registerFireWeatherTool } from "./fire-weather/index.js";
@@ -36,6 +39,9 @@ export function registerAllTools(server: McpServer): void {
   registerAirQualityTool(server);
   registerMarineTool(server);
   registerSoilTool(server);
+  registerWindTool(server);
+  registerPrecipitationTool(server);
+  registerHumidityTool(server);
 
   // Layer 2: Vertical Compound Tools - combine multiple data sources
   registerFireWeatherTool(server);
@@ -91,6 +97,27 @@ export const toolManifest = [
       "Get current soil conditions for a location. Returns soil moisture and temperature at multiple depths, with planting recommendations.",
     category: "primitive",
     tags: ["soil", "agriculture", "moisture"],
+  },
+  {
+    name: "get_wind",
+    description:
+      "Get wind conditions for a city. Returns current wind speed, direction, gusts, Beaufort scale, plus 24-hour and 7-day forecasts.",
+    category: "primitive",
+    tags: ["wind", "weather", "forecast"],
+  },
+  {
+    name: "get_precipitation",
+    description:
+      "Get precipitation data for a city. Returns current precipitation (rain, snow, showers), hourly probabilities, and 7-day forecast with totals.",
+    category: "primitive",
+    tags: ["precipitation", "rain", "snow", "forecast"],
+  },
+  {
+    name: "get_humidity",
+    description:
+      "Get humidity and moisture data for a city. Returns relative humidity, dew point, comfort levels, fog potential, and 48-hour forecast.",
+    category: "primitive",
+    tags: ["humidity", "moisture", "dew-point", "comfort"],
   },
 
   // Layer 2: Vertical Compound Tools

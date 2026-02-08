@@ -14,6 +14,22 @@ export type { Cache, CacheEntry, CacheSetOptions } from "./types.js";
 /** Default TTL: 5 minutes. Weather data is reasonably fresh at this interval. */
 const DEFAULT_TTL_MS = 5 * 60 * 1000;
 
+// ─── Per-volatility TTL tiers ────────────────────────────────────────────────
+//
+// Data‑volatility strategy:
+//   REALTIME  — current observations that update every 10–15 min at the source.
+//   FORECAST  — daily/hourly forecasts that update 1–2× per day.
+//   STATIC    — reference data (geocoding) that effectively never changes.
+
+/** 5 min — current weather, wind, precip, humidity, marine, soil, air quality, fire weather. */
+export const TTL_REALTIME = 5 * 60 * 1_000;
+
+/** 15 min — daily & hourly forecasts, agriculture (7-day). */
+export const TTL_FORECAST = 15 * 60 * 1_000;
+
+/** 24 hrs — geocoding lookups (city → lat/lon). */
+export const TTL_STATIC = 24 * 60 * 60 * 1_000;
+
 /** How often the passive sweep runs to prune expired entries (60 s). */
 const SWEEP_INTERVAL_MS = 60 * 1000;
 

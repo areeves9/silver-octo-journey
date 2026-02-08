@@ -5,7 +5,7 @@
 import type { GeoResult } from "../shared/geocoding.js";
 import type { WindResponse } from "./types.js";
 import { getBeaufortScale, getCardinalDirection, WIND_ADVISORIES } from "./constants.js";
-import { fetchWithTimeout } from "../shared/fetch.js";
+import { cachedFetchJson } from "../shared/fetch.js";
 
 /**
  * Fetch wind data for coordinates.
@@ -27,13 +27,7 @@ export async function fetchWindData(
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-  const response = await fetchWithTimeout(url);
-
-  if (!response.ok) {
-    throw new Error(`Wind API returned ${response.status}`);
-  }
-
-  return (await response.json()) as WindResponse;
+  return cachedFetchJson<WindResponse>(url);
 }
 
 /**

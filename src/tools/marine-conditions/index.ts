@@ -10,7 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WMO_CODES } from "../weather/constants.js";
 import { getCardinalDirection } from "../shared/directions.js";
 import { getSeaState } from "../shared/sea-state.js";
-import { fetchWithTimeout } from "../shared/fetch.js";
+import { cachedFetchJson } from "../shared/fetch.js";
 import type { MarineConditionsResponse, MarineAssessment, ActivitySuitability, MarineActivity } from "./types.js";
 
 // Re-export types
@@ -59,20 +59,10 @@ async function fetchMarineConditionsData(
     timezone: "auto",
   });
 
-  const [marineRes, weatherRes] = await Promise.all([
-    fetchWithTimeout(`https://marine-api.open-meteo.com/v1/marine?${marineParams}`),
-    fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?${weatherParams}`),
+  const [marine, weather] = await Promise.all([
+    cachedFetchJson<MarineConditionsResponse["marine"]>(`https://marine-api.open-meteo.com/v1/marine?${marineParams}`),
+    cachedFetchJson<MarineConditionsResponse["weather"]>(`https://api.open-meteo.com/v1/forecast?${weatherParams}`),
   ]);
-
-  if (!marineRes.ok) {
-    throw new Error(`Marine API returned ${marineRes.status}`);
-  }
-  if (!weatherRes.ok) {
-    throw new Error(`Weather API returned ${weatherRes.status}`);
-  }
-
-  const marine = (await marineRes.json()) as MarineConditionsResponse["marine"];
-  const weather = (await weatherRes.json()) as MarineConditionsResponse["weather"];
 
   return {
     latitude,

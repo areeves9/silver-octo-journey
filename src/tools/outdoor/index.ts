@@ -8,7 +8,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { geocodeCity, type GeoResult } from "../shared/geocoding.js";
-import { fetchWithTimeout } from "../shared/fetch.js";
+import { cachedFetchJson } from "../shared/fetch.js";
 import { WMO_CODES } from "../weather/constants.js";
 import type { OutdoorResponse, OutdoorAssessment, ActivityRecommendation } from "./types.js";
 
@@ -59,20 +59,10 @@ async function fetchOutdoorData(
     timezone: "auto",
   });
 
-  const [weatherRes, aqRes] = await Promise.all([
-    fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?${weatherParams}`),
-    fetchWithTimeout(`https://air-quality-api.open-meteo.com/v1/air-quality?${aqParams}`),
+  const [weather, airQuality] = await Promise.all([
+    cachedFetchJson<OutdoorResponse["weather"]>(`https://api.open-meteo.com/v1/forecast?${weatherParams}`),
+    cachedFetchJson<OutdoorResponse["airQuality"]>(`https://air-quality-api.open-meteo.com/v1/air-quality?${aqParams}`),
   ]);
-
-  if (!weatherRes.ok) {
-    throw new Error(`Weather API returned ${weatherRes.status}`);
-  }
-  if (!aqRes.ok) {
-    throw new Error(`Air Quality API returned ${aqRes.status}`);
-  }
-
-  const weather = (await weatherRes.json()) as OutdoorResponse["weather"];
-  const airQuality = (await aqRes.json()) as OutdoorResponse["airQuality"];
 
   return {
     latitude,

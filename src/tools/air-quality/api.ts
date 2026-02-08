@@ -5,7 +5,7 @@
 import type { GeoResult } from "../shared/geocoding.js";
 import type { AirQualityResponse } from "./types.js";
 import { getUSAQILevel, getUVIndexLevel, getPollenLevel } from "./constants.js";
-import { fetchWithTimeout } from "../shared/fetch.js";
+import { cachedFetchJson } from "../shared/fetch.js";
 
 /**
  * Fetch current air quality for coordinates.
@@ -39,13 +39,7 @@ export async function fetchAirQuality(
   });
 
   const url = `https://air-quality-api.open-meteo.com/v1/air-quality?${params}`;
-  const response = await fetchWithTimeout(url);
-
-  if (!response.ok) {
-    throw new Error(`Air Quality API returned ${response.status}`);
-  }
-
-  return (await response.json()) as AirQualityResponse;
+  return cachedFetchJson<AirQualityResponse>(url);
 }
 
 /**

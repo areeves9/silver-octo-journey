@@ -6,7 +6,8 @@ import type { GeoResult } from "../shared/geocoding.js";
 import type { DailyForecastResponse, HourlyForecastResponse } from "./types.js";
 import { MAX_FORECAST_DAYS, MAX_FORECAST_HOURS } from "./constants.js";
 import { WMO_CODES } from "../weather/constants.js";
-import { fetchWithTimeout } from "../shared/fetch.js";
+import { cachedFetchJson } from "../shared/fetch.js";
+import { TTL_FORECAST } from "../shared/cache/index.js";
 
 /**
  * Fetch 7-day daily forecast for coordinates.
@@ -37,13 +38,7 @@ export async function fetchDailyForecast(
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-  const response = await fetchWithTimeout(url);
-
-  if (!response.ok) {
-    throw new Error(`Forecast API returned ${response.status}`);
-  }
-
-  return (await response.json()) as DailyForecastResponse;
+  return cachedFetchJson<DailyForecastResponse>(url, { ttlMs: TTL_FORECAST });
 }
 
 /**
@@ -76,13 +71,7 @@ export async function fetchHourlyForecast(
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-  const response = await fetchWithTimeout(url);
-
-  if (!response.ok) {
-    throw new Error(`Hourly forecast API returned ${response.status}`);
-  }
-
-  return (await response.json()) as HourlyForecastResponse;
+  return cachedFetchJson<HourlyForecastResponse>(url, { ttlMs: TTL_FORECAST });
 }
 
 /**

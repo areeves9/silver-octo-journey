@@ -10,6 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WMO_CODES } from "../weather/constants.js";
 import { getCardinalDirection } from "../shared/directions.js";
 import { getSeaState } from "../shared/sea-state.js";
+import { fetchWithTimeout } from "../shared/fetch.js";
 import type { MarineConditionsResponse, MarineAssessment, ActivitySuitability, MarineActivity } from "./types.js";
 
 // Re-export types
@@ -59,8 +60,8 @@ async function fetchMarineConditionsData(
   });
 
   const [marineRes, weatherRes] = await Promise.all([
-    fetch(`https://marine-api.open-meteo.com/v1/marine?${marineParams}`),
-    fetch(`https://api.open-meteo.com/v1/forecast?${weatherParams}`),
+    fetchWithTimeout(`https://marine-api.open-meteo.com/v1/marine?${marineParams}`),
+    fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?${weatherParams}`),
   ]);
 
   if (!marineRes.ok) {

@@ -8,6 +8,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { geocodeCity, type GeoResult } from "../shared/geocoding.js";
+import { fetchWithTimeout } from "../shared/fetch.js";
 import { WMO_CODES } from "../weather/constants.js";
 import type { OutdoorResponse, OutdoorAssessment, ActivityRecommendation } from "./types.js";
 
@@ -59,8 +60,8 @@ async function fetchOutdoorData(
   });
 
   const [weatherRes, aqRes] = await Promise.all([
-    fetch(`https://api.open-meteo.com/v1/forecast?${weatherParams}`),
-    fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${aqParams}`),
+    fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?${weatherParams}`),
+    fetchWithTimeout(`https://air-quality-api.open-meteo.com/v1/air-quality?${aqParams}`),
   ]);
 
   if (!weatherRes.ok) {

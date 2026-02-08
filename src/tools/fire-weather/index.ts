@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { geocodeCity, type GeoResult } from "../shared/geocoding.js";
 import { getCardinalDirection } from "../shared/directions.js";
+import { fetchWithTimeout } from "../shared/fetch.js";
 import type { FireWeatherResponse, FireRiskLevel, FireRiskAssessment, FireWeatherData } from "./types.js";
 
 // Re-export types
@@ -43,7 +44,7 @@ async function fetchFireWeatherData(
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
 
   if (!response.ok) {
     throw new Error(`Fire weather API returned ${response.status}`);

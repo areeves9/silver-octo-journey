@@ -3,6 +3,7 @@
  */
 
 import type { GeoResult } from "../shared/geocoding.js";
+import { fetchWithTimeout } from "../shared/fetch.js";
 import type { HumidityResponse } from "./types.js";
 import {
   getHumidityLevel,
@@ -41,7 +42,7 @@ export async function fetchHumidityData(
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
 
   if (!response.ok) {
     throw new Error(`Humidity API returned ${response.status}`);

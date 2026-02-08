@@ -6,6 +6,7 @@ import type { GeoResult } from "../shared/geocoding.js";
 import type { PrecipitationResponse } from "./types.js";
 import { getPrecipIntensity, getPrecipType, getProbabilityDescription } from "./constants.js";
 import { WMO_CODES } from "../weather/constants.js";
+import { fetchWithTimeout } from "../shared/fetch.js";
 
 /**
  * Fetch precipitation data for coordinates.
@@ -41,7 +42,7 @@ export async function fetchPrecipitationData(
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
 
   if (!response.ok) {
     throw new Error(`Precipitation API returned ${response.status}`);

@@ -9,7 +9,19 @@
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+
+// Layer 1: Primitives
 import { registerWeatherTool } from "./weather/index.js";
+import { registerForecastTool, registerHourlyForecastTool } from "./forecast/index.js";
+import { registerAirQualityTool } from "./air-quality/index.js";
+import { registerMarineTool } from "./marine/index.js";
+import { registerSoilTool } from "./soil/index.js";
+
+// Layer 2: Vertical Compound Tools
+import { registerFireWeatherTool } from "./fire-weather/index.js";
+import { registerAgricultureTool } from "./agriculture/index.js";
+import { registerOutdoorTool } from "./outdoor/index.js";
+import { registerMarineConditionsTool } from "./marine-conditions/index.js";
 
 /**
  * Register all available tools on an MCP server.
@@ -17,9 +29,19 @@ import { registerWeatherTool } from "./weather/index.js";
  * Add new tool registrations here as they're created.
  */
 export function registerAllTools(server: McpServer): void {
+  // Layer 1: Primitives - single-purpose tools returning focused data
   registerWeatherTool(server);
-  // Add more tools here:
-  // registerOtherTool(server);
+  registerForecastTool(server);
+  registerHourlyForecastTool(server);
+  registerAirQualityTool(server);
+  registerMarineTool(server);
+  registerSoilTool(server);
+
+  // Layer 2: Vertical Compound Tools - combine multiple data sources
+  registerFireWeatherTool(server);
+  registerAgricultureTool(server);
+  registerOutdoorTool(server);
+  registerMarineConditionsTool(server);
 }
 
 /**
@@ -27,10 +49,77 @@ export function registerAllTools(server: McpServer): void {
  * Lists available tools without requiring server instantiation.
  */
 export const toolManifest = [
+  // Layer 1: Primitives
   {
     name: "get_weather",
     description:
       "Get current weather conditions for a city. Returns temperature, humidity, wind, and conditions.",
+    category: "primitive",
+    tags: ["weather", "current"],
   },
-  // Add more tools here as they're created
+  {
+    name: "get_forecast",
+    description:
+      "Get 7-day daily weather forecast for a city. Returns daily high/low temperatures, conditions, and precipitation chance.",
+    category: "primitive",
+    tags: ["weather", "forecast", "daily"],
+  },
+  {
+    name: "get_hourly_forecast",
+    description:
+      "Get hourly weather forecast for a city. Returns temperature, conditions, and precipitation probability for each hour.",
+    category: "primitive",
+    tags: ["weather", "forecast", "hourly"],
+  },
+  {
+    name: "get_air_quality",
+    description:
+      "Get current air quality for a city. Returns AQI (US/EU), pollutant levels (PM2.5, PM10, ozone), UV index, and pollen levels.",
+    category: "primitive",
+    tags: ["air-quality", "pollution", "health"],
+  },
+  {
+    name: "get_marine",
+    description:
+      "Get current marine weather conditions for ocean coordinates. Returns wave height/direction/period, swell data, and ocean currents.",
+    category: "primitive",
+    tags: ["marine", "waves", "ocean"],
+  },
+  {
+    name: "get_soil_conditions",
+    description:
+      "Get current soil conditions for a location. Returns soil moisture and temperature at multiple depths, with planting recommendations.",
+    category: "primitive",
+    tags: ["soil", "agriculture", "moisture"],
+  },
+
+  // Layer 2: Vertical Compound Tools
+  {
+    name: "get_fire_weather",
+    description:
+      "Get fire weather assessment for a location. Combines wind, humidity, temperature, precipitation history, and soil moisture to assess wildfire risk with recommendations.",
+    category: "compound",
+    tags: ["fire", "wildfire", "safety", "risk-assessment"],
+  },
+  {
+    name: "get_growing_conditions",
+    description:
+      "Get agricultural growing conditions for a location. Includes soil moisture/temperature, evapotranspiration, precipitation forecast, frost risk, and planting recommendations.",
+    category: "compound",
+    tags: ["agriculture", "farming", "planting", "irrigation"],
+  },
+  {
+    name: "get_outdoor_conditions",
+    description:
+      "Get comprehensive outdoor activity assessment for a city. Combines current weather, air quality (AQI), UV index, and pollen levels with suitability recommendations.",
+    category: "compound",
+    tags: ["outdoor", "recreation", "health", "activity"],
+  },
+  {
+    name: "get_marine_conditions",
+    description:
+      "Get comprehensive marine conditions assessment for ocean coordinates. Includes waves, swell, wind, currents, and activity recommendations for swimming, surfing, boating, fishing, and diving.",
+    category: "compound",
+    tags: ["marine", "boating", "surfing", "fishing", "diving"],
+  },
 ] as const;

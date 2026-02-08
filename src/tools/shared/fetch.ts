@@ -34,11 +34,20 @@ export interface CachedFetchOptions {
 }
 
 /**
- * Fetch JSON with caching and timeout.
+ * In-flight request map keyed by URL.
+ *
+ * Prevents duplicate network calls when multiple callers request the
+ * same URL before the first response has been cached ("cache stampede").
+ */
+const inflight = new Map<string, Promise<unknown>>();
+
+/**
+ * Fetch JSON with caching, deduplication, and timeout.
  *
  * - Cache key is the full URL string.
  * - On cache hit the network call is skipped entirely.
- * - On cache miss the response is fetched, parsed as JSON, cached, and returned.
+ * - On cache miss, concurrent callers for the same URL share a single
+ *   in-flight fetch rather than issuing duplicate requests.
  * - Only successful (response.ok) responses are cached.
  *
  * Use this for GET requests to external APIs (weather, geocoding, etc.)
@@ -50,28 +59,44 @@ export async function cachedFetchJson<T = unknown>(
   options?: CachedFetchOptions,
 ): Promise<T> {
   const cache = getCache();
-  const cacheKey = url;
 
   // Check cache first
-  const cached = await cache.get<T>(cacheKey);
+  const cached = await cache.get<T>(url);
   if (cached !== undefined) {
     return cached;
   }
 
-  // Cache miss — fetch from network
-  const response = await fetchWithTimeout(url, undefined, options?.timeoutMs);
-
-  if (!response.ok) {
-    throw new Error(`API returned ${response.status}`);
+  // If an identical request is already in-flight, wait for it
+  const pending = inflight.get(url);
+  if (pending) {
+    return pending as Promise<T>;
   }
 
-  const data = (await response.json()) as T;
+  // Cache miss — fetch from network
+  const request = (async (): Promise<T> => {
+    const response = await fetchWithTimeout(url, undefined, options?.timeoutMs);
 
-  // Cache the parsed result
-  const setOptions: CacheSetOptions | undefined = options?.ttlMs
-    ? { ttlMs: options.ttlMs }
-    : undefined;
-  await cache.set(cacheKey, data, setOptions);
+    if (!response.ok) {
+      const host = new URL(url).host;
+      throw new Error(`${host} returned ${response.status}`);
+    }
 
-  return data;
+    const data = (await response.json()) as T;
+
+    // Cache the parsed result
+    const setOptions: CacheSetOptions | undefined = options?.ttlMs
+      ? { ttlMs: options.ttlMs }
+      : undefined;
+    await cache.set(url, data, setOptions);
+
+    return data;
+  })();
+
+  inflight.set(url, request);
+
+  try {
+    return await request;
+  } finally {
+    inflight.delete(url);
+  }
 }

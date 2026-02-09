@@ -262,48 +262,66 @@ function evaluateAlerts(
 
   // ── Precipitation ────────────────────────────────────────────────────────
 
+  // Scan all 7 days and keep only the highest-severity precipitation alert
+  let precipAlert: Alert | null = null;
+  let precipRank = Infinity; // lower = more severe
+
   for (let i = 0; i < daily.time.length; i++) {
     const rain = daily.precipitation_sum[i];
     const snow = daily.snowfall_sum[i];
     const timeframe = i === 0 ? "Today" : formatDay(daily.time[i]);
 
+    let candidate: Alert | null = null;
+    let candidateRank: number;
+
     if (rain >= RAIN_WARNING) {
-      alerts.push({
+      candidateRank = 0; // Warning
+      candidate = {
         category: "Precipitation",
         severity: i === 0 ? "Warning" : "Watch",
         headline: `${rain.toFixed(1)}" of rain expected`,
         timeframe,
         recommendation: "Flash flooding possible, avoid low-lying areas",
-      });
-      break;
+      };
     } else if (snow >= SNOW_WARNING) {
-      alerts.push({
+      candidateRank = 0;
+      candidate = {
         category: "Precipitation",
         severity: i === 0 ? "Warning" : "Watch",
         headline: `${snow.toFixed(1)}" of snow expected`,
         timeframe,
         recommendation: "Hazardous travel expected, stock supplies",
-      });
-      break;
+      };
     } else if (rain >= RAIN_ADVISORY) {
-      alerts.push({
+      candidateRank = 2; // Advisory
+      candidate = {
         category: "Precipitation",
         severity: i === 0 ? "Advisory" : "Watch",
         headline: `${rain.toFixed(1)}" of rain expected`,
         timeframe,
         recommendation: "Localized flooding possible, plan travel carefully",
-      });
-      break;
+      };
     } else if (snow >= SNOW_ADVISORY) {
-      alerts.push({
+      candidateRank = 2;
+      candidate = {
         category: "Precipitation",
         severity: i === 0 ? "Advisory" : "Watch",
         headline: `${snow.toFixed(1)}" of snow expected`,
         timeframe,
         recommendation: "Slippery roads possible, allow extra travel time",
-      });
-      break;
+      };
+    } else {
+      continue;
     }
+
+    if (candidate && candidateRank! < precipRank) {
+      precipAlert = candidate;
+      precipRank = candidateRank!;
+    }
+  }
+
+  if (precipAlert) {
+    alerts.push(precipAlert);
   }
 
   // ── Thunderstorm ─────────────────────────────────────────────────────────

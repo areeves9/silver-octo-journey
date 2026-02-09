@@ -25,6 +25,7 @@ import { registerFireWeatherTool } from "./fire-weather/index.js";
 import { registerAgricultureTool } from "./agriculture/index.js";
 import { registerOutdoorTool } from "./outdoor/index.js";
 import { registerMarineConditionsTool } from "./marine-conditions/index.js";
+import { registerSevereWeatherTool } from "./severe-weather/index.js";
 
 /**
  * Register all available tools on an MCP server.
@@ -48,6 +49,7 @@ export function registerAllTools(server: McpServer): void {
   registerAgricultureTool(server);
   registerOutdoorTool(server);
   registerMarineConditionsTool(server);
+  registerSevereWeatherTool(server);
 }
 
 /**
@@ -148,5 +150,12 @@ export const toolManifest = [
       "Get comprehensive marine conditions assessment for ocean coordinates. Includes waves, swell, wind, currents, and activity recommendations for swimming, surfing, boating, fishing, and diving.",
     category: "compound",
     tags: ["marine", "boating", "surfing", "fishing", "diving"],
+  },
+  {
+    name: "get_severe_weather",
+    description:
+      "Get severe weather summary for a city. Scans current conditions and 7-day forecast for heat, cold, wind, precipitation, thunderstorm, air quality, and UV hazards with prioritised alerts.",
+    category: "compound",
+    tags: ["severe", "alerts", "warnings", "safety", "hazards"],
   },
 ] as const;
